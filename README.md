@@ -1,5 +1,12 @@
 # ap-common
 
+[![Test](https://github.com/jewzaam/ap-common/workflows/Test/badge.svg)](https://github.com/jewzaam/ap-common/actions/workflows/test.yml)
+[![Coverage](https://github.com/jewzaam/ap-common/workflows/Coverage%20Check/badge.svg)](https://github.com/jewzaam/ap-common/actions/workflows/coverage.yml)
+[![Lint](https://github.com/jewzaam/ap-common/workflows/Lint/badge.svg)](https://github.com/jewzaam/ap-common/actions/workflows/lint.yml)
+[![Format](https://github.com/jewzaam/ap-common/workflows/Format%20Check/badge.svg)](https://github.com/jewzaam/ap-common/actions/workflows/format.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+
 Shared functionality package for astrophotography tools. Provides common utilities for FITS/XISF header reading, metadata normalization, file operations, and metadata extraction/filtering.
 
 ## Overview
