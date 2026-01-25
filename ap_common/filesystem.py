@@ -85,6 +85,6 @@ def delete_empty_directories(root_dir: str, dryrun: bool = False):
             try:
                 os.rmdir(dir_path)
                 done = False  # parent may need deleted
-            except:
+            except OSError:
                 # ignore if cannot delete dir, means it is not empty.  this is OK.
                 pass

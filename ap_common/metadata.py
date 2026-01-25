@@ -88,8 +88,8 @@ def get_metadata(
         debug=debug,
         printStatus=printStatus,
         profileFromPath=profileFromPath,
-        latitude=None,
-        longitude=None,
+        latitude=latitude,
+        longitude=longitude,
     )
 
 
@@ -241,8 +241,8 @@ def filter_metadata(data: dict, filters: dict, debug: bool = False):
         Filtered dictionary with only matching entries
     """
     # validate input filter data
-    if filters is None or filters.keys() is None or len(filters.keys()) == 0:
-        raise (Exception("Invalid filter data"))
+    if filters is None or len(filters) == 0:
+        raise ValueError("Invalid filter data")
 
     # validate filter values
     for filter_key in filters.keys():
@@ -251,9 +251,7 @@ def filter_metadata(data: dict, filters: dict, debug: bool = False):
         if filter_value is None:
             # unexpected.  bad input, but it should be rejected.
             print(f"ERROR filter: key '{filter_key}' has no value '{filter_value}'")
-            raise (
-                Exception(f"filter key '{filter_key}' has no value '{filter_value}'")
-            )
+            raise ValueError(f"filter key '{filter_key}' has no value '{filter_value}'")
 
     # filters are good.  process the data and build a new output data set
     output = {}
@@ -281,32 +279,32 @@ def filter_metadata(data: dict, filters: dict, debug: bool = False):
                         # not a match
                         is_match = False
                         break
-                except:
+                except Exception as e:
                     # no idea, bad function? bail!
-                    raise Exception(
-                        f"WARNING failed to call function '{filter_value}' with argument '{datum[filter_key]}'"
+                    raise RuntimeError(
+                        f"WARNING failed to call function '{filter_value}' with argument '{datum[filter_key]}': {e}"
                     )
 
-            elif type(filter_value) is int:
+            elif isinstance(filter_value, int):
                 try:
                     # convert to float first because "90.00" won't convert to int directly
                     if int(float(datum[filter_key])) != filter_value:
                         # not a match
                         is_match = False
                         break
-                except:
+                except (ValueError, TypeError):
                     # cannot convert to int probably, so it's not a match
                     is_match = False
                     break
 
-            elif type(filter_value) is float:
+            elif isinstance(filter_value, float):
                 try:
                     # set to match if
                     if float(datum[filter_key]) != filter_value:
                         # not a match
                         is_match = False
                         break
-                except:
+                except (ValueError, TypeError):
                     # cannot convert to float probably, so it's not a match
                     is_match = False
                     break

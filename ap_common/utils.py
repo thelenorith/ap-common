@@ -73,29 +73,30 @@ def get_filenames(
         for dir in dirs:
             dir = replace_env_vars(dir)
             if not recursive:
-                for filename in (
-                    filename
-                    for filename in os.listdir(dir)
-                    if re.search(pattern, filename)
-                    or (zips and zipfile.is_zipfile(filename))
-                ):
-                    # found a matching file or found a zip file
+                for filename in os.listdir(dir):
                     filename_path = os.path.join(dir, filename)
-                    if zips and zipfile.is_zipfile(filename_path):
-                        # Process ZIP archive
-                        with zipfile.ZipFile(filename_path, "r") as archive:
-                            for zip_filename in (
-                                filename
-                                for filename in archive.filelist
-                                if re.search(pattern, filename)
-                            ):
-                                # add each contained filename that matches the pattern
-                                filenames.append(
-                                    os.path.join(filename_path, zip_filename.filename)
-                                )
-                    else:
-                        # not a zip, simply add it
-                        filenames.append(filename_path)
+                    # Check if it matches the pattern or is a zip file
+                    if re.search(pattern, filename) or (
+                        zips and zipfile.is_zipfile(filename_path)
+                    ):
+                        # found a matching file or found a zip file
+                        if zips and zipfile.is_zipfile(filename_path):
+                            # Process ZIP archive
+                            with zipfile.ZipFile(filename_path, "r") as archive:
+                                for zip_filename in (
+                                    filename
+                                    for filename in archive.filelist
+                                    if re.search(pattern, filename)
+                                ):
+                                    # add each contained filename that matches the pattern
+                                    filenames.append(
+                                        os.path.join(
+                                            filename_path, zip_filename.filename
+                                        )
+                                    )
+                        else:
+                            # not a zip, simply add it
+                            filenames.append(filename_path)
             else:
                 for root, _, f_names in os.walk(dir):
                     for filename in (

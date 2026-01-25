@@ -137,7 +137,7 @@ def get_fits_headers(
         output = dict(fits_file[0].header)
     # convert all values to string
     for k in output:
-        if output[k] is not None and type(output[k]) is not str:
+        if output[k] is not None and not isinstance(output[k], str):
             output[k] = str(output[k])
 
     # file naming is higher priority but might be empty
