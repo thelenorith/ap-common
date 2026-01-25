@@ -53,8 +53,9 @@ class TestNormalizeDate:
 
     def test_standard_datetime(self):
         """Test standard datetime format."""
-        result = normalize_date("2024-01-15T12:30:45")
-        # Should subtract 16 hours and format as date
+        # Use explicit timezone offset (EST -4) to make test deterministic
+        # EST -4 - 12 = -16 hours total, so 12:30 - 16 = previous day
+        result = normalize_date("2024-01-15T12:30:45", timezone_offset_from_gmt=-4.0)
         assert result == "2024-01-14"  # 12:30 - 16 hours = previous day
 
     def test_with_timezone_z(self):
@@ -80,11 +81,15 @@ class TestNormalizeDate:
 
     def test_custom_formats(self):
         """Test with custom input and output formats."""
+        # Use explicit timezone offset (EST -4) to make test deterministic
+        # EST -4 - 12 = -16 hours total
         result = normalize_date(
-            "15/01/2024", input_format="%d/%m/%Y", output_format="%Y-%m-%d"
+            "15/01/2024",
+            input_format="%d/%m/%Y",
+            output_format="%Y-%m-%d",
+            timezone_offset_from_gmt=-4.0,
         )
-        # normalize_date subtracts 16 hours for timezone adjustment
-        # When parsed as datetime (even date-only gets converted), subtracting 16 hours gives previous day
+        # When parsed as datetime, subtracting 16 hours gives previous day
         assert result == "2024-01-14"  # Previous day due to 16-hour timezone offset
 
     def test_invalid_date(self):
@@ -131,9 +136,12 @@ class TestNormalizeDatetime:
 
     def test_standard_datetime(self):
         """Test standard datetime format."""
-        result = normalize_datetime("2024-01-15T12:30:45")
+        # Use explicit timezone offset to make test deterministic
+        # System timezone may vary, so use explicit EST (-4)
+        result = normalize_datetime("2024-01-15T12:30:45", timezone_offset_from_gmt=-4.0)
         assert isinstance(result, str)
         assert "_" in result  # Should be YYYY-MM-DD_HH-MM-SS format
+        assert "2024-01-14" in result  # Should be previous day with -16 hour offset
 
     def test_date_only_to_datetime(self):
         """Test date-only input converted to datetime."""
