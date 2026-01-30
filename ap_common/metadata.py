@@ -353,3 +353,98 @@ def get_filtered_metadata(
     )
 
     return metadata
+
+
+def group_by_directory(data: dict) -> dict:
+    """
+    Groups metadata entries by their parent directory.
+
+    Args:
+        data: Dictionary mapping filenames to metadata dictionaries
+
+    Returns:
+        Dictionary mapping directory paths to dictionaries of {filename: metadata}
+        for files in that directory
+    """
+    import os
+
+    grouped = {}
+
+    for filename, metadata in data.items():
+        directory = os.path.dirname(filename)
+        if directory not in grouped:
+            grouped[directory] = {}
+        grouped[directory][filename] = metadata
+
+    return grouped
+
+
+def get_directories_with_lights(data: dict) -> set:
+    """
+    Returns the set of directories that contain at least one LIGHT frame.
+
+    This is useful for finding directories that may need calibration frames
+    to be matched with their light frames.
+
+    Args:
+        data: Dictionary mapping filenames to metadata dictionaries
+
+    Returns:
+        Set of directory paths that contain at least one LIGHT type file
+    """
+    import os
+    from ap_common.constants import TYPE_LIGHT, NORMALIZED_HEADER_TYPE
+
+    directories = set()
+
+    for filename, metadata in data.items():
+        frame_type = metadata.get(NORMALIZED_HEADER_TYPE, "")
+        if frame_type and frame_type.upper() == TYPE_LIGHT:
+            directories.add(os.path.dirname(filename))
+
+    return directories
+
+
+def get_calibration_candidates(
+    data: dict,
+    light_directories: set = None,
+    calibration_types: list = None,
+) -> dict:
+    """
+    Returns calibration frames that could potentially be used for calibration
+    of light frames in the specified directories.
+
+    Calibration frames are matched based on being in the same directory as
+    light frames. This helps identify which calibration frames exist for
+    a given set of light frame directories.
+
+    Args:
+        data: Dictionary mapping filenames to metadata dictionaries
+        light_directories: Set of directories to find calibration frames for.
+            If None, uses get_directories_with_lights(data) to find directories.
+        calibration_types: List of calibration frame types to look for.
+            If None, uses ALL_CALIBRATION_TYPES from constants.
+
+    Returns:
+        Dictionary mapping filenames to metadata for calibration frames
+        found in the specified directories
+    """
+    from ap_common.constants import ALL_CALIBRATION_TYPES, NORMALIZED_HEADER_TYPE
+    import os
+
+    if calibration_types is None:
+        calibration_types = ALL_CALIBRATION_TYPES
+
+    if light_directories is None:
+        light_directories = get_directories_with_lights(data)
+
+    calibration_frames = {}
+
+    for filename, metadata in data.items():
+        directory = os.path.dirname(filename)
+        if directory in light_directories:
+            frame_type = metadata.get(NORMALIZED_HEADER_TYPE, "")
+            if frame_type and frame_type.upper() in [ct.upper() for ct in calibration_types]:
+                calibration_frames[filename] = metadata
+
+    return calibration_frames

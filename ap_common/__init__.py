@@ -22,6 +22,9 @@ from ap_common.metadata import (
     enrich_metadata,
     get_filtered_metadata,
     filter_metadata,
+    group_by_directory,
+    get_directories_with_lights,
+    get_calibration_candidates,
 )
 from ap_common.utils import replace_env_vars, resolve_path, camelCase, get_filenames
 from ap_common.progress import progress_iter, ProgressTracker
@@ -116,6 +119,9 @@ __all__ = [
     "enrich_metadata",
     "get_filtered_metadata",
     "filter_metadata",
+    "group_by_directory",
+    "get_directories_with_lights",
+    "get_calibration_candidates",
     # Utility functions
     "replace_env_vars",
     "resolve_path",

@@ -435,3 +435,239 @@ class TestGetFilteredMetadata:
         call_args = mock_get.call_args
         assert "type" in call_args.kwargs["required_properties"]
         assert "camera" in call_args.kwargs["required_properties"]
+
+
+class TestGroupByDirectory:
+    """Tests for group_by_directory function."""
+
+    def test_basic_grouping(self):
+        """Test basic grouping by directory."""
+        from ap_common.metadata import group_by_directory
+
+        data = {
+            "/path/dir1/file1.fits": {"type": "LIGHT"},
+            "/path/dir1/file2.fits": {"type": "DARK"},
+            "/path/dir2/file3.fits": {"type": "LIGHT"},
+        }
+
+        result = group_by_directory(data)
+
+        assert len(result) == 2
+        assert "/path/dir1" in result
+        assert "/path/dir2" in result
+        assert len(result["/path/dir1"]) == 2
+        assert len(result["/path/dir2"]) == 1
+
+    def test_empty_data(self):
+        """Test grouping empty data."""
+        from ap_common.metadata import group_by_directory
+
+        result = group_by_directory({})
+
+        assert result == {}
+
+    def test_single_directory(self):
+        """Test grouping files all in one directory."""
+        from ap_common.metadata import group_by_directory
+
+        data = {
+            "/path/dir1/file1.fits": {"type": "LIGHT"},
+            "/path/dir1/file2.fits": {"type": "DARK"},
+            "/path/dir1/file3.fits": {"type": "FLAT"},
+        }
+
+        result = group_by_directory(data)
+
+        assert len(result) == 1
+        assert "/path/dir1" in result
+        assert len(result["/path/dir1"]) == 3
+
+    def test_nested_directories(self):
+        """Test grouping files in nested directories."""
+        from ap_common.metadata import group_by_directory
+
+        data = {
+            "/path/dir1/subdir/file1.fits": {"type": "LIGHT"},
+            "/path/dir1/file2.fits": {"type": "DARK"},
+        }
+
+        result = group_by_directory(data)
+
+        assert len(result) == 2
+        assert "/path/dir1/subdir" in result
+        assert "/path/dir1" in result
+
+
+class TestGetDirectoriesWithLights:
+    """Tests for get_directories_with_lights function."""
+
+    def test_basic_light_detection(self):
+        """Test detecting directories with light frames."""
+        from ap_common.metadata import get_directories_with_lights
+
+        data = {
+            "/path/dir1/file1.fits": {"type": "LIGHT"},
+            "/path/dir1/file2.fits": {"type": "DARK"},
+            "/path/dir2/file3.fits": {"type": "DARK"},
+            "/path/dir3/file4.fits": {"type": "LIGHT"},
+        }
+
+        result = get_directories_with_lights(data)
+
+        assert len(result) == 2
+        assert "/path/dir1" in result
+        assert "/path/dir3" in result
+        assert "/path/dir2" not in result
+
+    def test_no_lights(self):
+        """Test with no light frames."""
+        from ap_common.metadata import get_directories_with_lights
+
+        data = {
+            "/path/dir1/file1.fits": {"type": "DARK"},
+            "/path/dir2/file2.fits": {"type": "FLAT"},
+        }
+
+        result = get_directories_with_lights(data)
+
+        assert len(result) == 0
+
+    def test_empty_data(self):
+        """Test with empty data."""
+        from ap_common.metadata import get_directories_with_lights
+
+        result = get_directories_with_lights({})
+
+        assert len(result) == 0
+
+    def test_case_insensitive(self):
+        """Test that light detection is case insensitive."""
+        from ap_common.metadata import get_directories_with_lights
+
+        data = {
+            "/path/dir1/file1.fits": {"type": "light"},
+            "/path/dir2/file2.fits": {"type": "Light"},
+            "/path/dir3/file3.fits": {"type": "LIGHT"},
+        }
+
+        result = get_directories_with_lights(data)
+
+        assert len(result) == 3
+
+    def test_missing_type(self):
+        """Test files without type are not counted as lights."""
+        from ap_common.metadata import get_directories_with_lights
+
+        data = {
+            "/path/dir1/file1.fits": {"camera": "Camera1"},
+            "/path/dir2/file2.fits": {"type": "LIGHT"},
+        }
+
+        result = get_directories_with_lights(data)
+
+        assert len(result) == 1
+        assert "/path/dir2" in result
+
+
+class TestGetCalibrationCandidates:
+    """Tests for get_calibration_candidates function."""
+
+    def test_basic_calibration_candidates(self):
+        """Test finding calibration frames in light directories."""
+        from ap_common.metadata import get_calibration_candidates
+
+        data = {
+            "/path/dir1/light1.fits": {"type": "LIGHT"},
+            "/path/dir1/dark1.fits": {"type": "DARK"},
+            "/path/dir1/flat1.fits": {"type": "FLAT"},
+            "/path/dir2/dark2.fits": {"type": "DARK"},
+        }
+
+        result = get_calibration_candidates(data)
+
+        # Only calibration frames in directories with lights
+        assert len(result) == 2
+        assert "/path/dir1/dark1.fits" in result
+        assert "/path/dir1/flat1.fits" in result
+        assert "/path/dir2/dark2.fits" not in result
+
+    def test_custom_light_directories(self):
+        """Test with custom light directories."""
+        from ap_common.metadata import get_calibration_candidates
+
+        data = {
+            "/path/dir1/dark1.fits": {"type": "DARK"},
+            "/path/dir2/dark2.fits": {"type": "DARK"},
+        }
+
+        result = get_calibration_candidates(data, light_directories={"/path/dir2"})
+
+        assert len(result) == 1
+        assert "/path/dir2/dark2.fits" in result
+
+    def test_custom_calibration_types(self):
+        """Test with custom calibration types."""
+        from ap_common.metadata import get_calibration_candidates
+
+        data = {
+            "/path/dir1/light1.fits": {"type": "LIGHT"},
+            "/path/dir1/dark1.fits": {"type": "DARK"},
+            "/path/dir1/flat1.fits": {"type": "FLAT"},
+            "/path/dir1/bias1.fits": {"type": "BIAS"},
+        }
+
+        result = get_calibration_candidates(data, calibration_types=["DARK"])
+
+        assert len(result) == 1
+        assert "/path/dir1/dark1.fits" in result
+
+    def test_master_calibration_frames(self):
+        """Test that master calibration frames are also found."""
+        from ap_common.metadata import get_calibration_candidates
+
+        data = {
+            "/path/dir1/light1.fits": {"type": "LIGHT"},
+            "/path/dir1/master_dark.fits": {"type": "MASTER DARK"},
+            "/path/dir1/master_flat.fits": {"type": "MASTER FLAT"},
+        }
+
+        result = get_calibration_candidates(data)
+
+        assert len(result) == 2
+        assert "/path/dir1/master_dark.fits" in result
+        assert "/path/dir1/master_flat.fits" in result
+
+    def test_no_calibration_frames(self):
+        """Test with no calibration frames."""
+        from ap_common.metadata import get_calibration_candidates
+
+        data = {
+            "/path/dir1/light1.fits": {"type": "LIGHT"},
+            "/path/dir1/light2.fits": {"type": "LIGHT"},
+        }
+
+        result = get_calibration_candidates(data)
+
+        assert len(result) == 0
+
+    def test_empty_data(self):
+        """Test with empty data."""
+        from ap_common.metadata import get_calibration_candidates
+
+        result = get_calibration_candidates({})
+
+        assert len(result) == 0
+
+    def test_case_insensitive(self):
+        """Test that calibration type detection is case insensitive."""
+        from ap_common.metadata import get_calibration_candidates
+
+        data = {
+            "/path/dir1/light1.fits": {"type": "LIGHT"},
+            "/path/dir1/dark1.fits": {"type": "dark"},
+            "/path/dir1/flat1.fits": {"type": "Flat"},
+        }
+
+        result = get_calibration_candidates(data)
+
+        assert len(result) == 2
