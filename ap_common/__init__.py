@@ -24,6 +24,7 @@ from ap_common.metadata import (
     filter_metadata,
 )
 from ap_common.utils import replace_env_vars, camelCase, get_filenames
+from ap_common.progress import progress_iter, ProgressTracker
 
 __all__ = [
     # FITS functions
@@ -53,4 +54,7 @@ __all__ = [
     "replace_env_vars",
     "camelCase",
     "get_filenames",
+    # Progress utilities
+    "progress_iter",
+    "ProgressTracker",
 ]
