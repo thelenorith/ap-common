@@ -19,6 +19,14 @@ This package extracts reusable functionality from astrophotography tools into a 
 - **File Operations**: Move, copy, and manage files with directory creation
 - **Utility Functions**: Environment variable replacement, string conversion, file finding
 
+## Documentation
+
+This tool is part of the astrophotography pipeline. For comprehensive documentation including workflow guides and integration with other tools, see:
+
+- **[Pipeline Overview](https://github.com/jewzaam/ap-base/blob/main/docs/index.md)** - Full pipeline documentation
+- **[Workflow Guide](https://github.com/jewzaam/ap-base/blob/main/docs/workflow.md)** - Detailed workflow with diagrams
+- **[ap-common Reference](https://github.com/jewzaam/ap-base/blob/main/docs/tools/ap-common.md)** - API reference for this tool
+
 ## Installation
 
 ### Local Development (Editable Install)
