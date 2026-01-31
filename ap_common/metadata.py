@@ -444,7 +444,9 @@ def get_calibration_candidates(
         directory = os.path.dirname(filename)
         if directory in light_directories:
             frame_type = metadata.get(NORMALIZED_HEADER_TYPE, "")
-            if frame_type and frame_type.upper() in [ct.upper() for ct in calibration_types]:
+            if frame_type and frame_type.upper() in [
+                ct.upper() for ct in calibration_types
+            ]:
                 calibration_frames[filename] = metadata
 
     return calibration_frames
