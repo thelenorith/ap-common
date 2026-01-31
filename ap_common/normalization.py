@@ -194,7 +194,9 @@ def normalize_target_name(input: str) -> list[str]:
     return [target, panel]
 
 
-def normalize_headers(input: dict, timezone_offset_from_gmt: float | None = None) -> dict:
+def normalize_headers(
+    input: dict, timezone_offset_from_gmt: float | None = None
+) -> dict:
     """
     Normalizes a dictionary of headers using FILTER_NORMALIZATION_DATA and CONSTANT_NORMALIZATION_DATA.
     Converts keys to lower case if not found in normalization data.
