@@ -205,6 +205,10 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# Claude Code
+#  Claude Code CLI local settings and user-specific configuration
+.claude/
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
