@@ -59,6 +59,13 @@ HEADER_OBSGEO_L = "OBSGEO-L"
 # Readout mode header
 HEADER_READOUTM = "READOUTM"
 
+# Camera settings headers
+HEADER_GAIN = "GAIN"
+HEADER_OFFSET = "OFFSET"
+
+# Focal length header
+HEADER_FOCALLEN = "FOCALLEN"
+
 # =============================================================================
 # Normalized Header Names
 # These are the standardized keys used internally after header normalization
@@ -78,6 +85,9 @@ NORMALIZED_HEADER_SETTEMP = "settemp"
 NORMALIZED_HEADER_LATITUDE = "latitude"
 NORMALIZED_HEADER_LONGITUDE = "longitude"
 NORMALIZED_HEADER_READOUTMODE = "readoutmode"
+NORMALIZED_HEADER_GAIN = "gain"
+NORMALIZED_HEADER_OFFSET = "offset"
+NORMALIZED_HEADER_FOCALLEN = "focallen"
 NORMALIZED_HEADER_PANEL = "panel"
 NORMALIZED_HEADER_FILENAME = "filename"
 NORMALIZED_HEADER_HFR = "hfr"
