@@ -12,8 +12,9 @@ from ap_common.normalization import (
     normalize_headers,
     get_normalized_key,
     get_normalized_keys_set,
+    get_all_normalized_keys,
 )
-from ap_common.utils import replace_env_vars
+from ap_common.utils import replace_env_vars, resolve_path
 
 
 def get_file_headers(
@@ -34,6 +35,9 @@ def get_file_headers(
         normalize: Whether to normalize the headers
         directory_accept: The "accept" directory name to look for (project-specific, defaults to "accept")
     """
+    # Normalize path separators to OS-appropriate format
+    filename = resolve_path(filename)
+
     directory_accept = directory_accept or "accept"
 
     output = {
@@ -125,6 +129,9 @@ def get_fits_headers(
         file_naming_override: Whether to override with headers from filename
         directory_accept: The "accept" directory name (project-specific)
     """
+    # Normalize path separators to OS-appropriate format
+    filename = resolve_path(filename)
+
     file_output = {}
     output = {}
 
@@ -156,12 +163,16 @@ def get_fits_headers(
 
     # Filter out FITS headers whose normalized form would conflict with filename headers
     # (e.g., remove EXPTIME if filename has EXPOSURE, since both → exposureseconds)
+    # Only filter if ALL normalized keys from this header are provided by filename
     if normalized_keys_from_filename:
-        output = {
-            k: v
-            for k, v in output.items()
-            if get_normalized_key(k) not in normalized_keys_from_filename
-        }
+        filtered_output = {}
+        for k, v in output.items():
+            # Get all normalized keys this raw header produces
+            normalized_keys = get_all_normalized_keys(k)
+            # Only filter if ALL normalized keys are already in filename
+            if not all(nk in normalized_keys_from_filename for nk in normalized_keys):
+                filtered_output[k] = v
+        output = filtered_output
 
     # file naming is higher priority but might be empty
     output = dict(list(output.items()) + list(file_output.items()))
@@ -189,6 +200,9 @@ def get_xisf_headers(
         file_naming_override: Whether to override with headers from filename
         directory_accept: The "accept" directory name (project-specific)
     """
+    # Normalize path separators to OS-appropriate format
+    filename = resolve_path(filename)
+
     output = {}
 
     # Build a set of normalized keys from filename headers to detect conflicts
@@ -217,7 +231,9 @@ def get_xisf_headers(
             continue
         # Skip keys whose normalized form would conflict with filename headers
         # (e.g., skip EXPTIME if filename already has EXPOSURE, since both → exposureseconds)
-        if get_normalized_key(k) in normalized_keys_from_filename:
+        # Only skip if ALL normalized keys from this header are provided by filename
+        normalized_keys = get_all_normalized_keys(k)
+        if all(nk in normalized_keys_from_filename for nk in normalized_keys):
             continue
         if (
             len(metadata[0]["FITSKeywords"][k]) > 0

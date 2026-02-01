@@ -147,10 +147,10 @@ def get_filenames(
     filenames = []
     for pattern in patterns:
         for dir in dirs:
-            resolved_dir = replace_env_vars(dir)
-            if resolved_dir is None:
+            # Normalize path separators to OS-appropriate format
+            dir = resolve_path(dir)
+            if dir is None:
                 continue
-            dir = resolved_dir
             if not recursive:
                 for filename in os.listdir(dir):
                     filename_path = os.path.join(dir, filename)
@@ -185,4 +185,7 @@ def get_filenames(
                         if "_stash" in root:
                             continue
                         filenames.append(os.path.join(root, filename))
+
+    # Normalize all output paths to OS-appropriate format
+    filenames = [resolve_path(f) for f in filenames]
     return filenames

@@ -276,6 +276,24 @@ def get_normalized_key(raw_key: str) -> str:
         return raw_key.lower()
 
 
+def get_all_normalized_keys(raw_key: str) -> list[str]:
+    """
+    Returns all normalized key names that a raw header key maps to.
+
+    For example, DATE-OBS maps to both 'date' and 'datetime'.
+
+    Args:
+        raw_key: The raw FITS header key
+
+    Returns:
+        List of all normalized keys this raw key produces, or [raw_key.lower()] if not in normalization data
+    """
+    if raw_key in FILTER_NORMALIZATION_DATA:
+        return list(FILTER_NORMALIZATION_DATA[raw_key].keys())
+    else:
+        return [raw_key.lower()]
+
+
 def get_normalized_keys_set(headers: dict) -> set:
     """
     Returns a set of normalized key names from a dictionary of raw headers.
@@ -290,7 +308,10 @@ def get_normalized_keys_set(headers: dict) -> set:
     Returns:
         Set of normalized key names
     """
-    return {get_normalized_key(k) for k in headers.keys()}
+    result = set()
+    for k in headers.keys():
+        result.update(get_all_normalized_keys(k))
+    return result
 
 
 def denormalize_header(header: str) -> str | None:

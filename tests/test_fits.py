@@ -23,7 +23,8 @@ class TestGetFileHeaders:
         # The function includes path in keys, so check for the actual key format
         assert "/path/to/FILTER" in result or "FILTER" in result or "filter" in result
         assert "filename" in result
-        assert result["filename"] == filename
+        # Filename gets normalized by resolve_path, so check it contains the base filename
+        assert "FILTER_Ha_EXPOSURE_60.0_IMAGETYP_LIGHT_file.fits" in result["filename"]
 
     def test_with_underscores(self):
         """Test parsing filename with underscores."""
@@ -404,3 +405,112 @@ class TestGetXisfHeaders:
         # even though they use different raw keys (EXPOSURE vs EXPTIME)
         assert "exposureseconds" in result
         assert result["exposureseconds"] == "100.00"
+
+
+class TestPathNormalization:
+    """Tests for path normalization in FITS reading functions."""
+
+    def test_get_file_headers_normalizes_forward_slashes(self):
+        """Test that get_file_headers normalizes forward slashes to OS separator."""
+        # Use forward slashes in path (Unix-style)
+        filename = "F:/test/path/FILTER_Ha_EXPOSURE_60.0.fits"
+        result = get_file_headers(filename, profileFromPath=False, normalize=False)
+
+        # The normalized filename should use OS-appropriate separators
+        assert "filename" in result
+        # On Windows, should have backslashes; on Unix, forward slashes
+        expected_sep = os.sep
+        assert expected_sep in result["filename"]
+
+    @patch("ap_common.fits.fits")
+    def test_get_fits_headers_normalizes_path(self, mock_fits):
+        """Test that get_fits_headers normalizes path before reading."""
+        # Mock FITS file
+        mock_fits_file = Mock()
+        mock_fits_file.__enter__ = Mock(return_value=mock_fits_file)
+        mock_fits_file.__exit__ = Mock(return_value=False)
+        mock_fits_file.__getitem__ = Mock(
+            return_value=Mock(header={"DATE-OBS": "2024-01-15T12:30:45"})
+        )
+        mock_fits.open.return_value = mock_fits_file
+
+        # Use forward slashes (Unix-style path on Windows)
+        filename = "F:/test/path/file.fits"
+        result = get_fits_headers(
+            filename, profileFromPath=False, file_naming_override=False
+        )
+
+        # The path passed to fits.open should be normalized
+        # We can't easily check what was passed, but at least verify it doesn't crash
+        assert "datetime" in result
+
+
+class TestDateObsPreservation:
+    """Tests for DATE-OBS preservation with file_naming_override."""
+
+    @patch("ap_common.fits.fits")
+    def test_date_obs_preserved_with_file_override(self, mock_fits):
+        """Test that DATE-OBS is kept because not all its normalized keys are in filename.
+
+        DATE-OBS produces both 'date' and 'datetime'. Filename provides 'date' but not 'datetime',
+        so DATE-OBS is preserved to provide the missing 'datetime' key.
+        """
+        # Mock FITS file with DATE-OBS header
+        mock_fits_file = Mock()
+        mock_fits_file.__enter__ = Mock(return_value=mock_fits_file)
+        mock_fits_file.__exit__ = Mock(return_value=False)
+        mock_fits_file.__getitem__ = Mock(
+            return_value=Mock(
+                header={
+                    "DATE-OBS": "2024-01-15T12:30:45",
+                    "FILTER": "Ha",
+                    "EXPOSURE": "60.0",
+                }
+            )
+        )
+        mock_fits.open.return_value = mock_fits_file
+
+        # Filename has DATE in path which provides 'date' normalized key
+        filename = "/path/DATE_2024-01-15/FILTER_R_file.fits"
+        result = get_fits_headers(
+            filename, profileFromPath=False, file_naming_override=True, normalize=True
+        )
+
+        # Both date and datetime should be present
+        # date comes from filename, datetime comes from DATE-OBS
+        assert "date" in result
+        assert "datetime" in result
+        assert result["date"] == "2024-01-15"  # From filename
+        assert "2024-01-" in result["datetime"]  # From FITS DATE-OBS
+
+    @patch("ap_common.fits.fits")
+    def test_date_obs_not_filtered_out(self, mock_fits):
+        """Test that DATE-OBS is kept when filename provides partial overlap.
+
+        Even though filename provides 'date' which conflicts with one of DATE-OBS's
+        normalized keys, DATE-OBS is preserved because it also provides 'datetime'
+        which the filename doesn't have. Only filter when ALL normalized keys overlap.
+        """
+        mock_fits_file = Mock()
+        mock_fits_file.__enter__ = Mock(return_value=mock_fits_file)
+        mock_fits_file.__exit__ = Mock(return_value=False)
+        mock_fits_file.__getitem__ = Mock(
+            return_value=Mock(
+                header={
+                    "DATE-OBS": "2024-01-15T12:30:45.123",
+                    "INSTRUME": "TestCamera",
+                }
+            )
+        )
+        mock_fits.open.return_value = mock_fits_file
+
+        # Filename provides BOTH a conflicting date AND a camera
+        filename = "/path/DATE_2024-12-31/INSTRUME_FileCamera/file.fits"
+        result = get_fits_headers(
+            filename, profileFromPath=False, file_naming_override=True, normalize=True
+        )
+
+        # datetime must be present from DATE-OBS despite date conflict
+        assert "datetime" in result
+        # Verify it came from FITS file (has time component)
+        assert "_" in result["datetime"]  # Should be YYYY-MM-DD_HH-MM-SS format

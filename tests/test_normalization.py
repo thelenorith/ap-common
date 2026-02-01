@@ -13,6 +13,8 @@ from ap_common.normalization import (
     normalize_headers,
     denormalize_header,
     normalize_filename,
+    get_all_normalized_keys,
+    get_normalized_keys_set,
 )
 
 
@@ -435,3 +437,79 @@ class TestNormalizeFilename:
         # Should use optic+camera format without focal_ratio
         assert "Refractor+Camera1" in result
         assert "@f" not in result  # No focal ratio in path
+
+
+class TestGetAllNormalizedKeys:
+    """Tests for get_all_normalized_keys function."""
+
+    def test_date_obs_returns_multiple_keys(self):
+        """Test that DATE-OBS returns both date and datetime."""
+        result = get_all_normalized_keys("DATE-OBS")
+        assert "date" in result
+        assert "datetime" in result
+        assert len(result) == 2
+
+    def test_single_key_mapping(self):
+        """Test headers that map to single normalized key."""
+        assert get_all_normalized_keys("FILTER") == ["filter"]
+        assert get_all_normalized_keys("INSTRUME") == ["camera"]
+        assert get_all_normalized_keys("TELESCOP") == ["optic"]
+
+    def test_exposure_variants(self):
+        """Test that different exposure headers all map to exposureseconds."""
+        assert get_all_normalized_keys("EXPOSURE") == ["exposureseconds"]
+        assert get_all_normalized_keys("EXPTIME") == ["exposureseconds"]
+        assert get_all_normalized_keys("EXP") == ["exposureseconds"]
+
+    def test_unknown_header_lowercased(self):
+        """Test that unknown headers return lowercased version."""
+        assert get_all_normalized_keys("UNKNOWN") == ["unknown"]
+        assert get_all_normalized_keys("CustomHeader") == ["customheader"]
+
+
+class TestGetNormalizedKeysSet:
+    """Tests for get_normalized_keys_set function."""
+
+    def test_single_header(self):
+        """Test with single header."""
+        headers = {"FILTER": "Ha"}
+        result = get_normalized_keys_set(headers)
+        assert "filter" in result
+
+    def test_multiple_headers(self):
+        """Test with multiple headers."""
+        headers = {"FILTER": "Ha", "EXPOSURE": "60.0", "INSTRUME": "Camera1"}
+        result = get_normalized_keys_set(headers)
+        assert "filter" in result
+        assert "exposureseconds" in result
+        assert "camera" in result
+
+    def test_date_obs_includes_both_keys(self):
+        """Test that DATE-OBS contributes both date and datetime to the set."""
+        headers = {"DATE-OBS": "2024-01-15T12:30:45"}
+        result = get_normalized_keys_set(headers)
+        assert "date" in result
+        assert "datetime" in result
+        assert len(result) == 2
+
+    def test_conflicting_exposure_headers(self):
+        """Test that EXPOSURE and EXPTIME both map to exposureseconds."""
+        headers = {"EXPOSURE": "60.0", "EXPTIME": "60.0"}
+        result = get_normalized_keys_set(headers)
+        # Both map to same key, so should only appear once in set
+        assert "exposureseconds" in result
+        assert result == {"exposureseconds"}
+
+    def test_mixed_headers_with_date_obs(self):
+        """Test mixed headers including DATE-OBS."""
+        headers = {
+            "DATE-OBS": "2024-01-15T12:30:45",
+            "FILTER": "Ha",
+            "INSTRUME": "Camera1",
+        }
+        result = get_normalized_keys_set(headers)
+        assert "date" in result
+        assert "datetime" in result
+        assert "filter" in result
+        assert "camera" in result
+        assert len(result) == 4
