@@ -106,11 +106,13 @@ TYPE_BIAS = "BIAS"
 # =============================================================================
 # Image Type Constants - Master (Stacked) Frames
 # =============================================================================
+# Note: PixInsight inconsistency - BIAS and DARK don't get "MASTER" prefix,
+# but FLAT does. These constants match PixInsight's actual behavior.
 
 TYPE_MASTER_LIGHT = "MASTER LIGHT"
-TYPE_MASTER_DARK = "MASTER DARK"
+TYPE_MASTER_DARK = "DARK"
 TYPE_MASTER_FLAT = "MASTER FLAT"
-TYPE_MASTER_BIAS = "MASTER BIAS"
+TYPE_MASTER_BIAS = "BIAS"
 
 # =============================================================================
 # Calibration Frame Type Lists
