@@ -148,12 +148,12 @@ def get_filenames(
     for pattern in patterns:
         for dir in dirs:
             # Normalize path separators to OS-appropriate format
-            dir = resolve_path(dir)
-            if dir is None:
+            resolved_dir = resolve_path(dir)
+            if resolved_dir is None:
                 continue
             if not recursive:
-                for filename in os.listdir(dir):
-                    filename_path = os.path.join(dir, filename)
+                for filename in os.listdir(resolved_dir):
+                    filename_path = os.path.join(resolved_dir, filename)
                     # Check if it matches the pattern or is a zip file
                     if re.search(pattern, filename) or (
                         zips and zipfile.is_zipfile(filename_path)
@@ -177,7 +177,7 @@ def get_filenames(
                             # not a zip, simply add it
                             filenames.append(filename_path)
             else:
-                for root, _, f_names in os.walk(dir):
+                for root, _, f_names in os.walk(resolved_dir):
                     for filename in (
                         filename for filename in f_names if re.search(pattern, filename)
                     ):
@@ -187,5 +187,10 @@ def get_filenames(
                         filenames.append(os.path.join(root, filename))
 
     # Normalize all output paths to OS-appropriate format
-    filenames = [resolve_path(f) for f in filenames]
-    return filenames
+    # Filter out None values in case resolve_path fails
+    normalized_filenames = []
+    for f in filenames:
+        resolved = resolve_path(f)
+        if resolved is not None:
+            normalized_filenames.append(resolved)
+    return normalized_filenames

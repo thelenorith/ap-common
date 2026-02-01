@@ -36,7 +36,10 @@ def get_file_headers(
         directory_accept: The "accept" directory name to look for (project-specific, defaults to "accept")
     """
     # Normalize path separators to OS-appropriate format
-    filename = resolve_path(filename)
+    resolved = resolve_path(filename)
+    if resolved is None:
+        raise ValueError(f"Could not resolve path: {filename}")
+    filename = resolved
 
     directory_accept = directory_accept or "accept"
 
@@ -130,7 +133,10 @@ def get_fits_headers(
         directory_accept: The "accept" directory name (project-specific)
     """
     # Normalize path separators to OS-appropriate format
-    filename = resolve_path(filename)
+    resolved = resolve_path(filename)
+    if resolved is None:
+        raise ValueError(f"Could not resolve path: {filename}")
+    filename = resolved
 
     file_output = {}
     output = {}
@@ -201,7 +207,10 @@ def get_xisf_headers(
         directory_accept: The "accept" directory name (project-specific)
     """
     # Normalize path separators to OS-appropriate format
-    filename = resolve_path(filename)
+    resolved = resolve_path(filename)
+    if resolved is None:
+        raise ValueError(f"Could not resolve path: {filename}")
+    filename = resolved
 
     output = {}
 
