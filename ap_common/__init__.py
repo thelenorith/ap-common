@@ -30,12 +30,6 @@ from ap_common.metadata import (
     group_by_directory,
     get_directories_with_lights,
 )
-from ap_common.calibration_matching import (
-    find_matching_dark,
-    find_matching_bias,
-    find_matching_flat,
-    find_all_matching_calibrations,
-)
 from ap_common.utils import replace_env_vars, resolve_path, camelCase, get_filenames
 from ap_common.progress import progress_iter, ProgressTracker
 from ap_common.logging_config import setup_logging, get_logger
@@ -131,11 +125,6 @@ __all__ = [
     "filter_metadata",
     "group_by_directory",
     "get_directories_with_lights",
-    # Calibration matching functions
-    "find_matching_dark",
-    "find_matching_bias",
-    "find_matching_flat",
-    "find_all_matching_calibrations",
     # Utility functions
     "replace_env_vars",
     "resolve_path",
