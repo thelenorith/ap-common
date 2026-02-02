@@ -106,13 +106,13 @@ TYPE_BIAS = "BIAS"
 # =============================================================================
 # Image Type Constants - Master (Stacked) Frames
 # =============================================================================
-# Note: PixInsight inconsistency - BIAS and DARK don't get "MASTER" prefix,
-# but FLAT does. These constants match PixInsight's actual behavior.
+# Note: ap-create-master writes these values to generated master XISF files
+# after creation to ensure consistent IMAGETYP headers.
 
 TYPE_MASTER_LIGHT = "MASTER LIGHT"
-TYPE_MASTER_DARK = "DARK"
+TYPE_MASTER_DARK = "MASTER DARK"
 TYPE_MASTER_FLAT = "MASTER FLAT"
-TYPE_MASTER_BIAS = "BIAS"
+TYPE_MASTER_BIAS = "MASTER BIAS"
 
 # =============================================================================
 # Calibration Frame Type Lists

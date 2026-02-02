@@ -514,3 +514,207 @@ class TestDateObsPreservation:
         assert "datetime" in result
         # Verify it came from FITS file (has time component)
         assert "_" in result["datetime"]  # Should be YYYY-MM-DD_HH-MM-SS format
+
+
+class TestUpdateXisfHeaders:
+    """Tests for update_xisf_headers function."""
+
+    def test_updates_single_header(self, tmp_path):
+        """Test updating a single header."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        # Create test XISF file
+        image_data = np.zeros((10, 10, 1), dtype=np.float32)
+        XISF.write(str(xisf_file), image_data)
+
+        # Update header
+        from ap_common.fits import update_xisf_headers
+
+        result = update_xisf_headers(str(xisf_file), {"IMAGETYP": "MASTER BIAS"})
+
+        assert result is True
+
+        # Verify header was written
+        image_metadata = {}
+        XISF.read(str(xisf_file), image_metadata=image_metadata)
+        assert "FITSKeywords" in image_metadata
+        assert "IMAGETYP" in image_metadata["FITSKeywords"]
+        assert image_metadata["FITSKeywords"]["IMAGETYP"][0]["value"] == "MASTER BIAS"
+
+    def test_updates_multiple_headers(self, tmp_path):
+        """Test updating multiple headers at once."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        image_data = np.zeros((10, 10, 1), dtype=np.float32)
+        XISF.write(str(xisf_file), image_data)
+
+        from ap_common.fits import update_xisf_headers
+
+        result = update_xisf_headers(
+            str(xisf_file),
+            {"IMAGETYP": "MASTER BIAS", "CAMERA": "ATR585M", "GAIN": "239"},
+        )
+
+        assert result is True
+
+        image_metadata = {}
+        XISF.read(str(xisf_file), image_metadata=image_metadata)
+        assert image_metadata["FITSKeywords"]["IMAGETYP"][0]["value"] == "MASTER BIAS"
+        assert image_metadata["FITSKeywords"]["CAMERA"][0]["value"] == "ATR585M"
+        assert image_metadata["FITSKeywords"]["GAIN"][0]["value"] == "239"
+
+    def test_adds_comments_to_headers(self, tmp_path):
+        """Test that comments are added to headers."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        image_data = np.zeros((10, 10, 1), dtype=np.float32)
+        XISF.write(str(xisf_file), image_data)
+
+        from ap_common.fits import update_xisf_headers
+
+        result = update_xisf_headers(
+            str(xisf_file),
+            {"IMAGETYP": "MASTER BIAS"},
+            comments={"IMAGETYP": "Master calibration frame type"},
+        )
+
+        assert result is True
+
+        image_metadata = {}
+        XISF.read(str(xisf_file), image_metadata=image_metadata)
+        assert (
+            image_metadata["FITSKeywords"]["IMAGETYP"][0]["comment"]
+            == "Master calibration frame type"
+        )
+
+    def test_preserves_existing_headers(self, tmp_path):
+        """Test that existing headers are preserved."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        # Create file with existing headers
+        image_data = np.zeros((10, 10, 1), dtype=np.float32)
+        existing_metadata = {
+            "FITSKeywords": {
+                "CAMERA": [{"value": "ATR585M", "comment": "Test camera"}],
+                "GAIN": [{"value": "239", "comment": "Test gain"}],
+            }
+        }
+        XISF.write(str(xisf_file), image_data, image_metadata=existing_metadata)
+
+        # Update with new header
+        from ap_common.fits import update_xisf_headers
+
+        result = update_xisf_headers(str(xisf_file), {"IMAGETYP": "MASTER BIAS"})
+
+        assert result is True
+
+        # Verify all headers exist
+        image_metadata = {}
+        XISF.read(str(xisf_file), image_metadata=image_metadata)
+        assert image_metadata["FITSKeywords"]["IMAGETYP"][0]["value"] == "MASTER BIAS"
+        assert image_metadata["FITSKeywords"]["CAMERA"][0]["value"] == "ATR585M"
+        assert image_metadata["FITSKeywords"]["GAIN"][0]["value"] == "239"
+
+    def test_check_existing_skips_unchanged_values(self, tmp_path):
+        """Test that check_existing=True skips unchanged values."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        # Create file with existing header
+        image_data = np.zeros((10, 10, 1), dtype=np.float32)
+        existing_metadata = {
+            "FITSKeywords": {
+                "IMAGETYP": [{"value": "MASTER BIAS", "comment": ""}],
+            }
+        }
+        XISF.write(str(xisf_file), image_data, image_metadata=existing_metadata)
+
+        # Try to update with same value
+        from ap_common.fits import update_xisf_headers
+
+        result = update_xisf_headers(
+            str(xisf_file), {"IMAGETYP": "MASTER BIAS"}, check_existing=True
+        )
+
+        # Should return False (not modified)
+        assert result is False
+
+    def test_check_existing_false_always_writes(self, tmp_path):
+        """Test that check_existing=False always writes."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        # Create file with existing header
+        image_data = np.zeros((10, 10, 1), dtype=np.float32)
+        existing_metadata = {
+            "FITSKeywords": {
+                "IMAGETYP": [{"value": "MASTER BIAS", "comment": ""}],
+            }
+        }
+        XISF.write(str(xisf_file), image_data, image_metadata=existing_metadata)
+
+        # Update with same value but check_existing=False
+        from ap_common.fits import update_xisf_headers
+
+        result = update_xisf_headers(
+            str(xisf_file), {"IMAGETYP": "MASTER BIAS"}, check_existing=False
+        )
+
+        # Should return True (modified)
+        assert result is True
+
+    def test_raises_filenotfound_for_missing_file(self, tmp_path):
+        """Test that FileNotFoundError is raised for missing files."""
+        xisf_file = tmp_path / "nonexistent.xisf"
+
+        from ap_common.fits import update_xisf_headers
+
+        with pytest.raises(FileNotFoundError):
+            update_xisf_headers(str(xisf_file), {"IMAGETYP": "MASTER BIAS"})
+
+    def test_handles_path_normalization(self, tmp_path):
+        """Test that paths are normalized correctly."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        image_data = np.zeros((10, 10, 1), dtype=np.float32)
+        XISF.write(str(xisf_file), image_data)
+
+        # Use path with forward slashes
+        from ap_common.fits import update_xisf_headers
+
+        result = update_xisf_headers(
+            str(xisf_file).replace("\\", "/"), {"IMAGETYP": "MASTER BIAS"}
+        )
+
+        assert result is True
+
+    def test_preserves_image_data(self, tmp_path):
+        """Test that image data is preserved during header update."""
+        xisf_file = tmp_path / "test.xisf"
+        import numpy as np
+        from xisf import XISF
+
+        # Create file with specific data pattern
+        image_data = np.arange(100, dtype=np.float32).reshape(10, 10, 1)
+        XISF.write(str(xisf_file), image_data)
+
+        # Update header
+        from ap_common.fits import update_xisf_headers
+
+        update_xisf_headers(str(xisf_file), {"IMAGETYP": "MASTER BIAS"})
+
+        # Read back and verify data unchanged
+        read_data = XISF.read(str(xisf_file))
+        np.testing.assert_array_equal(read_data, image_data)
