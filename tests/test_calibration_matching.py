@@ -86,7 +86,9 @@ class TestMatchesCameraSettings:
         """Test matching when only camera is specified."""
         light = {"camera": "ZWO ASI294"}
         cal = {"camera": "ZWO ASI294"}
-        assert _matches_camera_settings(light, cal, match_gain=False, match_offset=False)
+        assert _matches_camera_settings(
+            light, cal, match_gain=False, match_offset=False
+        )
 
     def test_different_cameras(self):
         """Test non-matching when cameras differ."""

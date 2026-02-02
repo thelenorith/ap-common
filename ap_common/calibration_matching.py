@@ -116,7 +116,9 @@ def _matches_camera_settings(
     return True
 
 
-def _is_calibration_type(metadata: dict, calibration_type: str, master_type: str) -> bool:
+def _is_calibration_type(
+    metadata: dict, calibration_type: str, master_type: str
+) -> bool:
     """
     Check if metadata represents a specific calibration type.
 
@@ -181,12 +183,17 @@ def find_matching_dark(
 
         # Check camera settings match
         if not _matches_camera_settings(
-            light_metadata, cal_metadata, match_gain=match_gain, match_offset=match_offset
+            light_metadata,
+            cal_metadata,
+            match_gain=match_gain,
+            match_offset=match_offset,
         ):
             continue
 
         # Get dark exposure
-        dark_exposure = _get_float_value(cal_metadata, NORMALIZED_HEADER_EXPOSURESECONDS)
+        dark_exposure = _get_float_value(
+            cal_metadata, NORMALIZED_HEADER_EXPOSURESECONDS
+        )
         if dark_exposure is None:
             continue
 
@@ -205,12 +212,14 @@ def find_matching_dark(
         is_exact = abs(dark_exposure - light_exposure) < 0.001
         exposure_diff = dark_exposure - light_exposure
 
-        candidates.append({
-            "filename": filename,
-            "is_exact": is_exact,
-            "exposure_diff": exposure_diff,
-            "exposure": dark_exposure,
-        })
+        candidates.append(
+            {
+                "filename": filename,
+                "is_exact": is_exact,
+                "exposure_diff": exposure_diff,
+                "exposure": dark_exposure,
+            }
+        )
 
     if not candidates:
         return None
@@ -257,7 +266,10 @@ def find_matching_bias(
 
         # Check camera settings match
         if not _matches_camera_settings(
-            light_metadata, cal_metadata, match_gain=match_gain, match_offset=match_offset
+            light_metadata,
+            cal_metadata,
+            match_gain=match_gain,
+            match_offset=match_offset,
         ):
             continue
 
@@ -308,7 +320,18 @@ def find_matching_flat(
             # Try common date formats
             for fmt in ["%Y-%m-%d", "%Y%m%d", "%Y-%m-%dT%H:%M:%S"]:
                 try:
-                    light_date = datetime.strptime(light_date_str[:len(fmt.replace("%", "").replace("-", "").replace(":", "").replace("T", "")) + 4], fmt)
+                    light_date = datetime.strptime(
+                        light_date_str[
+                            : len(
+                                fmt.replace("%", "")
+                                .replace("-", "")
+                                .replace(":", "")
+                                .replace("T", "")
+                            )
+                            + 4
+                        ],
+                        fmt,
+                    )
                     break
                 except ValueError:
                     continue
@@ -328,7 +351,10 @@ def find_matching_flat(
 
         # Check camera settings match
         if not _matches_camera_settings(
-            light_metadata, cal_metadata, match_gain=match_gain, match_offset=match_offset
+            light_metadata,
+            cal_metadata,
+            match_gain=match_gain,
+            match_offset=match_offset,
         ):
             continue
 
@@ -347,7 +373,18 @@ def find_matching_flat(
                     flat_date = None
                     for fmt in ["%Y-%m-%d", "%Y%m%d", "%Y-%m-%dT%H:%M:%S"]:
                         try:
-                            flat_date = datetime.strptime(flat_date_str[:len(fmt.replace("%", "").replace("-", "").replace(":", "").replace("T", "")) + 4], fmt)
+                            flat_date = datetime.strptime(
+                                flat_date_str[
+                                    : len(
+                                        fmt.replace("%", "")
+                                        .replace("-", "")
+                                        .replace(":", "")
+                                        .replace("T", "")
+                                    )
+                                    + 4
+                                ],
+                                fmt,
+                            )
                             break
                         except ValueError:
                             continue
@@ -361,10 +398,12 @@ def find_matching_flat(
                     # If we can't parse the date, skip date check
                     pass
 
-        candidates.append({
-            "filename": filename,
-            "days_diff": days_diff if days_diff is not None else float("inf"),
-        })
+        candidates.append(
+            {
+                "filename": filename,
+                "days_diff": days_diff if days_diff is not None else float("inf"),
+            }
+        )
 
     if not candidates:
         return None
