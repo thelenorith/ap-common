@@ -86,6 +86,45 @@ class TestSetupLogging:
         assert formatter._fmt == LOG_FORMAT
         assert formatter.datefmt == DATE_FORMAT
 
+    def test_quiet_level_true(self):
+        """Test log level is WARNING when quiet=True."""
+        logger = setup_logging(name="test_logger_quiet_1", quiet=True)
+        assert logger.level == logging.WARNING
+
+    def test_debug_overrides_quiet(self):
+        """Test debug=True overrides quiet=True to DEBUG level."""
+        logger = setup_logging(name="test_logger_quiet_2", debug=True, quiet=True)
+        assert logger.level == logging.DEBUG
+
+    def test_default_quiet_is_false(self):
+        """Test quiet defaults to False (INFO level)."""
+        logger = setup_logging(name="test_logger_quiet_3")
+        assert logger.level == logging.INFO
+
+    def test_handler_level_matches_quiet(self):
+        """Test handler level matches WARNING when quiet=True."""
+        logger = setup_logging(name="test_logger_quiet_4", quiet=True)
+        assert logger.handlers[0].level == logging.WARNING
+
+    def test_quiet_mode_suppresses_info(self):
+        """Test INFO messages are filtered in quiet mode."""
+        logger = setup_logging(name="test_logger_quiet_5", quiet=True)
+
+        stream = StringIO()
+        handler = logging.StreamHandler(stream)
+        handler.setLevel(logging.WARNING)
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.handlers = [handler]
+
+        logger.info("Info message")
+        logger.warning("Warning message")
+        logger.error("Error message")
+
+        output = stream.getvalue()
+        assert "Info message" not in output
+        assert "Warning message" in output
+        assert "Error message" in output
+
 
 class TestGetLogger:
     """Tests for get_logger function."""
