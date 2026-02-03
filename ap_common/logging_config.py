@@ -26,6 +26,7 @@ _logger = None
 def setup_logging(
     name: str = "ap_common",
     debug: bool = False,
+    quiet: bool = False,
     log_format: str = LOG_FORMAT,
     date_format: str = DATE_FORMAT,
 ):
@@ -37,20 +38,37 @@ def setup_logging(
 
     Args:
         name: Logger name (defaults to "ap_common")
-        debug: If True, sets log level to DEBUG; otherwise INFO
+        debug: If True, sets log level to DEBUG (overrides quiet)
+        quiet: If True, sets log level to WARNING (suppresses INFO)
         log_format: Custom log format string (defaults to LOG_FORMAT)
         date_format: Custom date format string (defaults to DATE_FORMAT)
 
     Returns:
         Configured logger instance
+
+    Logging Level Behavior:
+        | debug | quiet | Level   | Messages Shown           |
+        |-------|-------|---------|--------------------------|
+        | False | False | INFO    | INFO, WARNING, ERROR     |
+        | False | True  | WARNING | WARNING, ERROR           |
+        | True  | False | DEBUG   | DEBUG, INFO, WARNING, ERROR |
+        | True  | True  | DEBUG   | DEBUG, INFO, WARNING, ERROR |
+
+    Note: The debug flag overrides quiet mode. When debug=True, all messages
+    are shown regardless of the quiet setting.
     """
     logger = logging.getLogger(name)
 
     # Clear existing handlers to prevent duplicates
     logger.handlers.clear()
 
-    # Set log level based on debug flag
-    level = logging.DEBUG if debug else logging.INFO
+    # Set log level based on flags
+    if debug:
+        level = logging.DEBUG  # Debug overrides quiet
+    elif quiet:
+        level = logging.WARNING  # Quiet suppresses INFO
+    else:
+        level = logging.INFO  # Default
     logger.setLevel(level)
 
     # Create console handler
